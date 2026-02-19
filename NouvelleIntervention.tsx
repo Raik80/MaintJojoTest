@@ -22,7 +22,7 @@ const NouvelleIntervention: React.FC<NouvelleInterventionProps> = ({
   onSavePress,
 }) => {
   const [notes, setNotes] = useState('');
-
+  
   const handleBackPress = () => {
     onBackPress?.();
   };
@@ -43,14 +43,18 @@ const NouvelleIntervention: React.FC<NouvelleInterventionProps> = ({
           <View style={styles.headerTopRow}>
             <Pressable
               onPress={handleBackPress}
-              style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+              accessibilityLabel="Retour à l'écran précédent"
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && styles.backButtonPressed
+              ]}
             >
               <MaterialIcons name="arrow-back" size={18} color="#DCE4F2" />
               <Text style={styles.backButtonText}>Retour</Text>
             </Pressable>
           </View>
-
-          <Text style={styles.headerTitle}>Details de l&apos;intervention</Text>
+          <Text style={styles.headerTitle}>Détails de l'intervention</Text>
         </View>
 
         <View style={styles.content}>
@@ -61,7 +65,7 @@ const NouvelleIntervention: React.FC<NouvelleInterventionProps> = ({
             multiline
             autoFocus
             textAlignVertical="top"
-            placeholder="Saisis ici les details pendant l'appel..."
+            placeholder="Saisis ici les détails pendant l'appel..."
             placeholderTextColor="#8B95A7"
           />
         </View>
@@ -69,10 +73,15 @@ const NouvelleIntervention: React.FC<NouvelleInterventionProps> = ({
         <View style={styles.footer}>
           <Pressable
             onPress={handleSavePress}
-            style={({ pressed }) => [styles.saveButton, pressed && styles.saveButtonPressed]}
+            accessibilityLabel="Enregistrer l'intervention"
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              styles.saveButton,
+              pressed && styles.saveButtonPressed
+            ]}
           >
             <MaterialIcons name="save" size={20} color="#FFFFFF" />
-            <Text style={styles.saveButtonText}>Enregistrer l&apos;intervention</Text>
+            <Text style={styles.saveButtonText}>Enregistrer l'intervention</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>

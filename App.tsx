@@ -1,20 +1,20 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import HomeScreen from './HomeScreen';
+import NouvelleIntervention from './NouvelleIntervention';
+
+type Screen = 'home' | 'nouvelle-intervention';
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+  const [screen, setScreen] = useState<Screen>('home');
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+  if (screen === 'nouvelle-intervention') {
+    return (
+      <NouvelleIntervention
+        onBackPress={() => setScreen('home')}
+        onSavePress={() => setScreen('home')}
+      />
+    );
+  }
+
+  return <HomeScreen onNewInterventionPress={() => setScreen('nouvelle-intervention')} />;
+}

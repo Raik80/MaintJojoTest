@@ -161,7 +161,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNewInterventionPress }) => {
         setNeonTheme(randomEvent);
         setEventName(randomEvent.name);
 
-        const holdDuration = 900 + Math.floor(Math.random() * 1500);
+        const holdDuration = 3000 + Math.floor(Math.random() * 5000);
         colorResetTimeoutRef.current = setTimeout(() => {
           if (!active) return;
           setNeonTheme(DEFAULT_NEON_THEME);

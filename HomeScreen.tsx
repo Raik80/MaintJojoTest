@@ -80,9 +80,10 @@ const ANIMATION_SPEED = {
 // ─────────────────────────────────────────────────────────────
 type HomeScreenProps = {
   onNewInterventionPress?: () => void;
+  onViewInterventionsPress?: () => void;
 };
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ onNewInterventionPress }) => {
+const HomeScreen: React.FC<HomeScreenProps> = ({ onNewInterventionPress, onViewInterventionsPress }) => {
   const flickerAnim = useRef(new Animated.Value(1)).current;
   const dropAnim = useRef(new Animated.Value(0)).current;
 
@@ -186,6 +187,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNewInterventionPress }) => {
     onNewInterventionPress?.();
   };
 
+  const handleViewInterventionsPress = () => {
+    Vibration.vibrate(10);
+    onViewInterventionsPress?.();
+  };
+
   const glowOpacity = flickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.16, 0.7] });
   const titleOpacity = flickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.62, 1] });
   const dropTranslateY = dropAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 30] });
@@ -256,6 +262,19 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNewInterventionPress }) => {
               <Text style={styles.interventionButtonText}>Nouvelle intervention</Text>
             </Pressable>
 
+            <Pressable
+              onPress={handleViewInterventionsPress}
+              accessibilityLabel="Voir les interventions enregistrées"
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.viewButton,
+                pressed && styles.viewButtonPressed,
+              ]}
+            >
+              <MaterialIcons name="list-alt" size={20} color="#DCE4F2" />
+              <Text style={styles.viewButtonText}>Voir les interventions</Text>
+            </Pressable>
+
 
         </View>
       </View>
@@ -296,6 +315,14 @@ const styles = StyleSheet.create({
   },
   interventionButtonPressed: { backgroundColor: '#0A58CA', transform: [{ scale: 0.96 }] },
   interventionButtonText: { marginLeft: 10, color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.5 },
+  viewButton: {
+    marginTop: 14, minWidth: 260, paddingVertical: 15, paddingHorizontal: 20,
+    borderRadius: 14, backgroundColor: 'transparent',
+    borderWidth: 1, borderColor: '#2A364D',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+  },
+  viewButtonPressed: { backgroundColor: '#182236', transform: [{ scale: 0.96 }] },
+  viewButtonText: { marginLeft: 10, color: '#DCE4F2', fontSize: 16, fontWeight: '600', letterSpacing: 0.5 },
   bottomSection: { flex: 1 },
 });
 

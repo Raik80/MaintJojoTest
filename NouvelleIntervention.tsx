@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -11,25 +11,40 @@ import {
   View,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import PhoneIllustration from './PhoneIllustration';
+import { analyserMultipleInterventions, InterventionExtractedData } from './src/utils/interventionParser';
 
+/**
+ * Propriétés du composant NouvelleIntervention.
+ * @property onBackPress - Fonction de rappel déclenchée lors de l'appui sur le bouton de retour.
+ * @property onAnalyzeComplete - Fonction de rappel déclenchée lors de l'analyse, renvoie le texte et le TABLEAU de données.
+ */
 type NouvelleInterventionProps = {
   onBackPress?: () => void;
-  onSavePress?: () => void;
+  onAnalyzeComplete?: (notes: string, data: InterventionExtractedData[]) => void;
 };
 
+/**
+ * Écran principal permettant de saisir les détails (notes) d'une nouvelle intervention.
+ * Supporte plusieurs interventions séparées par des sauts de ligne.
+ */
 const NouvelleIntervention: React.FC<NouvelleInterventionProps> = ({
   onBackPress,
-  onSavePress,
+  onAnalyzeComplete,
 }) => {
   const [notes, setNotes] = useState('');
-  
+
   const handleBackPress = () => {
     onBackPress?.();
   };
 
-  const handleSavePress = () => {
-    // TODO: brancher la sauvegarde reelle de "notes".
-    onSavePress?.();
+  const handleAnalyzePress = () => {
+    if (!notes.trim()) {
+      return;
+    }
+    // Utilise la nouvelle fonction multi-interventions
+    const extractedDataArray = analyserMultipleInterventions(notes);
+    onAnalyzeComplete?.(notes, extractedDataArray);
   };
 
   return (
@@ -55,9 +70,12 @@ const NouvelleIntervention: React.FC<NouvelleInterventionProps> = ({
             </Pressable>
           </View>
           <Text style={styles.headerTitle}>Détails de l'intervention</Text>
+          <Text style={styles.headerHint}>💡 Une intervention par ligne</Text>
         </View>
 
         <View style={styles.content}>
+          <PhoneIllustration />
+
           <TextInput
             style={styles.notesInput}
             value={notes}
@@ -65,23 +83,23 @@ const NouvelleIntervention: React.FC<NouvelleInterventionProps> = ({
             multiline
             autoFocus
             textAlignVertical="top"
-            placeholder="Saisis ici les détails pendant l'appel..."
+            placeholder={"Saisis ici les détails pendant l'appel...\n\nExemple :\nnéon qui clignote salle 102 bat A 2A\nprise arrachée cuisine BU"}
             placeholderTextColor="#8B95A7"
           />
         </View>
 
         <View style={styles.footer}>
           <Pressable
-            onPress={handleSavePress}
-            accessibilityLabel="Enregistrer l'intervention"
+            onPress={handleAnalyzePress}
+            accessibilityLabel="Analyser et continuer"
             accessibilityRole="button"
             style={({ pressed }) => [
               styles.saveButton,
               pressed && styles.saveButtonPressed
             ]}
           >
-            <MaterialIcons name="save" size={20} color="#FFFFFF" />
-            <Text style={styles.saveButtonText}>Enregistrer l'intervention</Text>
+            <MaterialIcons name="auto-awesome" size={20} color="#FFFFFF" />
+            <Text style={styles.saveButtonText}>Analyser & Continuer</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -99,7 +117,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: (StatusBar.currentHeight || 0) + 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#1D2738',
@@ -132,6 +150,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: 0.2,
+  },
+  headerHint: {
+    color: '#8B95A7',
+    fontSize: 13,
+    marginTop: 4,
   },
   content: {
     flex: 1,

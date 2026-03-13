@@ -12,6 +12,7 @@ import {
     View,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InterventionExtractedData } from './src/utils/interventionParser';
 
 /**
@@ -35,6 +36,7 @@ const FormulaireIntervention: React.FC<FormulaireInterventionProps> = ({
     onBackPress,
     onSavePress,
 }) => {
+    const insets = useSafeAreaInsets();
     // Index de l'intervention actuellement affichée
     const [currentIndex, setCurrentIndex] = useState(0);
     const total = interventionsData.length;
@@ -203,7 +205,7 @@ const FormulaireIntervention: React.FC<FormulaireInterventionProps> = ({
                 </ScrollView>
 
                 {/* Footer */}
-                <View style={styles.footer}>
+                <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
                     <Pressable
                         onPress={() => onSavePress?.(editedData)}
                         accessibilityLabel="Valider toutes les interventions"

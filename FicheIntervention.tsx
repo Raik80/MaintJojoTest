@@ -13,6 +13,7 @@ import {
     TextInput,
     View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -36,6 +37,7 @@ const FicheIntervention: React.FC<FicheInterventionProps> = ({
     onBackPress,
     onEditPress,
 }) => {
+    const insets = useSafeAreaInsets();
     const [intervention, setIntervention] = useState<SavedIntervention | null>(null);
     const [commentaire, setCommentaire] = useState('');
     const [photos, setPhotos] = useState<string[]>([]);
@@ -390,7 +392,7 @@ const FicheIntervention: React.FC<FicheInterventionProps> = ({
 
             {/* ─── Boutons Footer ──────────────────────────────── */}
             {!isTerminee && (
-                <View style={styles.footer}>
+                <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
                     <View style={styles.footerButtons}>
                         <Pressable
                             onPress={() => onEditPress?.(interventionId)}

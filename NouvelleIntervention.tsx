@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PhoneIllustration from './PhoneIllustration';
 import { analyserMultipleInterventions, InterventionExtractedData } from './src/utils/interventionParser';
 
@@ -32,6 +33,7 @@ const NouvelleIntervention: React.FC<NouvelleInterventionProps> = ({
   onBackPress,
   onAnalyzeComplete,
 }) => {
+  const insets = useSafeAreaInsets();
   const [notes, setNotes] = useState('');
 
   const handleBackPress = () => {
@@ -88,7 +90,7 @@ const NouvelleIntervention: React.FC<NouvelleInterventionProps> = ({
           />
         </View>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
           <Pressable
             onPress={handleAnalyzePress}
             accessibilityLabel="Analyser et continuer"

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import HomeScreen from './HomeScreen';
 import NouvelleIntervention from './NouvelleIntervention';
 import FormulaireIntervention from './FormulaireIntervention';
@@ -138,7 +139,7 @@ export default function App() {
   };
 
   return (
-    <>
+    <SafeAreaProvider>
       {renderScreen()}
       <CustomAlert
         visible={alertConfig.visible}
@@ -147,7 +148,7 @@ export default function App() {
         type={alertConfig.type}
         onConfirm={alertConfig.onConfirm || (() => setAlertConfig(prev => ({ ...prev, visible: false })))}
       />
-    </>
+    </SafeAreaProvider>
   );
 }
 

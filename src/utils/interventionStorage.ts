@@ -31,6 +31,8 @@ type SupabaseRow = {
     status: 'en_cours' | 'terminee';
     date_creation: string;
     date_terminee: string | null;
+    numero_interne: string | null;
+    nom_personne: string | null;
 };
 
 /**
@@ -49,6 +51,8 @@ const rowToIntervention = (row: SupabaseRow): SavedIntervention => ({
     status: row.status || 'en_cours',
     dateCreation: row.date_creation,
     dateTerminee: row.date_terminee || undefined,
+    numeroInterne: row.numero_interne || undefined,
+    nomPersonne: row.nom_personne || undefined,
 });
 
 /**
@@ -92,6 +96,8 @@ export const sauvegarderInterventions = async (
             commentaire: '',
             photos: [],
             status: 'en_cours',
+            numero_interne: i.numeroInterne || null,
+            nom_personne: i.nomPersonne || null,
         }));
 
         const { data, error } = await supabase
@@ -132,6 +138,8 @@ export const updateIntervention = async (
         if (updates.photos !== undefined) supabaseUpdates.photos = updates.photos;
         if (updates.status !== undefined) supabaseUpdates.status = updates.status;
         if (updates.dateTerminee !== undefined) supabaseUpdates.date_terminee = updates.dateTerminee;
+        if (updates.numeroInterne !== undefined) supabaseUpdates.numero_interne = updates.numeroInterne || null;
+        if (updates.nomPersonne !== undefined) supabaseUpdates.nom_personne = updates.nomPersonne || null;
 
         const { error } = await supabase
             .from('interventions')

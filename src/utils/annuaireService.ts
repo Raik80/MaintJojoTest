@@ -1,4 +1,4 @@
-const ANNUAIRE_BASE_URL = 'https://annuaire-web.univ-lorraine.fr/p/ldapsearch';
+const ANNUAIRE_BASE_URL = 'https://annuaire-web.univ-lorraine.fr/rest/ldapsearch';
 const TIMEOUT_MS = 5000;
 
 export type PersonneAnnuaire = {
@@ -26,7 +26,8 @@ export const rechercherParNumero = async (numeroInterne: string): Promise<Person
             throw new Error(`Erreur HTTP ${response.status}`);
         }
 
-        const json = await response.json();
+        const text = await response.text();
+        const json = JSON.parse(text);
         const items: any[] = json?.items ?? [];
 
         return items.map((item): PersonneAnnuaire => ({

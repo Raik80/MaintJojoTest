@@ -41,6 +41,8 @@ const ModifierIntervention: React.FC<ModifierInterventionProps> = ({
     const [typeIntervention, setTypeIntervention] = useState('');
     const [noteOriginale, setNoteOriginale] = useState('');
     const [commentaire, setCommentaire] = useState('');
+    const [numeroInterne, setNumeroInterne] = useState('');
+    const [nomPersonne, setNomPersonne] = useState('');
 
     const [alertConfig, setAlertConfig] = useState<{
         visible: boolean;
@@ -70,6 +72,8 @@ const ModifierIntervention: React.FC<ModifierInterventionProps> = ({
             setTypeIntervention(found.typeIntervention || '');
             setNoteOriginale(found.noteOriginale || '');
             setCommentaire(found.commentaire || '');
+            setNumeroInterne(found.numeroInterne || '');
+            setNomPersonne(found.nomPersonne || '');
         }
         setLoading(false);
     }, [interventionId]);
@@ -102,6 +106,8 @@ const ModifierIntervention: React.FC<ModifierInterventionProps> = ({
             typeIntervention: typeIntervention.trim(),
             noteOriginale: noteOriginale.trim(),
             commentaire: commentaire.trim(),
+            numeroInterne: numeroInterne.trim() || undefined,
+            nomPersonne: nomPersonne.trim() || undefined,
         });
         setSaving(false);
 
@@ -281,6 +287,38 @@ const ModifierIntervention: React.FC<ModifierInterventionProps> = ({
                             placeholderTextColor="#6B7280"
                             textAlignVertical="top"
                         />
+                    </View>
+
+                    {/* Personne concernée (téléphonie) — optionnel */}
+                    <View style={styles.sectionContainer}>
+                        <View style={styles.sectionHeader}>
+                            <MaterialIcons name="phone" size={20} color="#06B6D4" />
+                            <Text style={styles.sectionTitle}>Personne concernée</Text>
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Numéro interne</Text>
+                            <TextInput
+                                style={styles.textInput}
+                                value={numeroInterne}
+                                onChangeText={setNumeroInterne}
+                                placeholder="ex: 45043"
+                                placeholderTextColor="#6B7280"
+                                keyboardType="number-pad"
+                                maxLength={5}
+                            />
+                        </View>
+
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Nom</Text>
+                            <TextInput
+                                style={styles.textInput}
+                                value={nomPersonne}
+                                onChangeText={setNomPersonne}
+                                placeholder="Nom de la personne"
+                                placeholderTextColor="#6B7280"
+                            />
+                        </View>
                     </View>
 
                     <View style={{ height: 120 }} />

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,6 +16,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PhoneIllustration from './PhoneIllustration';
 import { analyserMultipleInterventions, InterventionExtractedData } from './src/utils/interventionParser';
+import { rechercherParNumero, PersonneAnnuaire } from './src/utils/annuaireService';
+import PersonSelectionModal from './src/components/PersonSelectionModal';
 
 /**
  * Propriétés du composant NouvelleIntervention.
@@ -35,18 +39,85 @@ const NouvelleIntervention: React.FC<NouvelleInterventionProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalPersonnes, setModalPersonnes] = useState<PersonneAnnuaire[]>([]);
+  const [modalNumero, setModalNumero] = useState('');
+  const resolveModalRef = React.useRef<((p: PersonneAnnuaire | null) => void) | null>(null);
+
+  const afficherModalSelection = (personnes: PersonneAnnuaire[], numero: string): Promise<PersonneAnnuaire | null> => {
+    return new Promise(resolve => {
+      resolveModalRef.current = resolve;
+      setModalPersonnes(personnes);
+      setModalNumero(numero);
+      setModalVisible(true);
+    });
+  };
+
+  const handleModalSelect = (personne: PersonneAnnuaire) => {
+    setModalVisible(false);
+    resolveModalRef.current?.(personne);
+    resolveModalRef.current = null;
+  };
+
+  const handleModalSkip = () => {
+    setModalVisible(false);
+    resolveModalRef.current?.(null);
+    resolveModalRef.current = null;
+  };
 
   const handleBackPress = () => {
     onBackPress?.();
   };
 
-  const handleAnalyzePress = () => {
-    if (!notes.trim()) {
+  const handleAnalyzePress = async () => {
+    if (!notes.trim()) return;
+
+    const extractedDataArray = analyserMultipleInterventions(notes);
+
+    const hasNumeros = extractedDataArray.some(d => !!d.numeroInterne);
+    if (!hasNumeros) {
+      onAnalyzeComplete?.(notes, extractedDataArray);
       return;
     }
-    // Utilise la nouvelle fonction multi-interventions
-    const extractedDataArray = analyserMultipleInterventions(notes);
-    onAnalyzeComplete?.(notes, extractedDataArray);
+
+    setLoading(true);
+
+    const enriched = [...extractedDataArray];
+    for (let i = 0; i < enriched.length; i++) {
+      const numero = enriched[i].numeroInterne;
+      if (!numero) continue;
+
+      try {
+        const personnes = await rechercherParNumero(numero);
+
+        if (personnes.length === 0) {
+          Alert.alert(
+            'Annuaire',
+            `Aucune personne trouvée pour le numéro ${numero}.`,
+            [{ text: 'OK' }]
+          );
+        } else if (personnes.length === 1) {
+          enriched[i] = { ...enriched[i], nomPersonne: personnes[0].displayName };
+        } else {
+          setLoading(false);
+          const selected = await afficherModalSelection(personnes, numero);
+          setLoading(true);
+          if (selected) {
+            enriched[i] = { ...enriched[i], nomPersonne: selected.displayName };
+          }
+        }
+      } catch {
+        Alert.alert(
+          'Annuaire',
+          "Impossible de contacter l'annuaire. La recherche sera ignorée.",
+          [{ text: 'OK' }]
+        );
+      }
+    }
+
+    setLoading(false);
+    onAnalyzeComplete?.(notes, enriched);
   };
 
   return (
@@ -93,18 +164,33 @@ const NouvelleIntervention: React.FC<NouvelleInterventionProps> = ({
         <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
           <Pressable
             onPress={handleAnalyzePress}
+            disabled={loading}
             accessibilityLabel="Analyser et continuer"
             accessibilityRole="button"
             style={({ pressed }) => [
               styles.saveButton,
-              pressed && styles.saveButtonPressed
+              pressed && !loading && styles.saveButtonPressed,
+              loading && styles.saveButtonDisabled,
             ]}
           >
-            <MaterialIcons name="auto-awesome" size={20} color="#FFFFFF" />
-            <Text style={styles.saveButtonText}>Analyser & Continuer</Text>
+            {loading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <MaterialIcons name="auto-awesome" size={20} color="#FFFFFF" />
+                <Text style={styles.saveButtonText}>Analyser & Continuer</Text>
+              </>
+            )}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+      <PersonSelectionModal
+        visible={modalVisible}
+        personnes={modalPersonnes}
+        numeroInterne={modalNumero}
+        onSelect={handleModalSelect}
+        onSkip={handleModalSkip}
+      />
     </SafeAreaView>
   );
 };
@@ -201,6 +287,9 @@ const styles = StyleSheet.create({
   saveButtonPressed: {
     backgroundColor: '#0E9F6E',
     transform: [{ scale: 0.985 }],
+  },
+  saveButtonDisabled: {
+    opacity: 0.7,
   },
   saveButtonText: {
     marginLeft: 8,

@@ -7,6 +7,8 @@ export type InterventionExtractedData = {
     etage: string;
     piece: string;
     typeIntervention: string;
+    numeroInterne?: string;
+    nomPersonne?: string;
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -125,6 +127,16 @@ const TYPES_INTERVENTION = [
             "prise réseau", "prise reseau",
         ],
     },
+    {
+        type: "Téléphonie",
+        keywords: [
+            "telephone hs", "téléphone hs",
+            "telephone qui repond plus", "téléphone qui répond plus",
+            "ne repond plus", "ne répond plus",
+            "probleme telephone", "problème téléphone",
+            "telephone", "téléphone",
+        ],
+    },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -145,6 +157,8 @@ export const analyserNotesIntervention = (texte: string): InterventionExtractedD
         etage: "",
         piece: "",
         typeIntervention: "",
+        numeroInterne: undefined,
+        nomPersonne: undefined,
     };
 
     const lowerTexte = texte.toLowerCase();
@@ -268,28 +282,34 @@ export const analyserNotesIntervention = (texte: string): InterventionExtractedD
         }
     }
 
-    // ── 4. Déduction du Type d'intervention ────────────────
-    // On trie les mots-clés par longueur décroissante pour matcher
-    // les phrases longues en premier (ex: "prise de courant" avant "prise réseau")
-    for (const categorie of TYPES_INTERVENTION) {
-        const sortedKeywords = [...categorie.keywords].sort((a, b) => b.length - a.length);
-        const isMatch = sortedKeywords.some(keyword => {
-            if (keyword.includes(' ')) {
-                return lowerTexte.includes(keyword);
-            }
-            const regex = new RegExp(`\\b${keyword}\\b`, 'i');
-            return regex.test(texte);
-        });
-
-        if (isMatch) {
-            result.typeIntervention = categorie.type;
-            break;
-        }
+    // ── Détection du numéro interne téléphonie (exactement 5 chiffres) ──
+    const numeroMatch = texte.match(/\b(\d{5})\b/);
+    if (numeroMatch) {
+        result.numeroInterne = numeroMatch[1];
+        result.typeIntervention = "Téléphonie";
     }
 
-    // Si aucun type n'a été trouvé, on met "Autres" par défaut
-    if (!result.typeIntervention && texte.trim().length > 0) {
-        result.typeIntervention = "Autres";
+    // ── 4. Déduction du Type d'intervention ────────────────
+    if (!result.typeIntervention) {
+        for (const categorie of TYPES_INTERVENTION) {
+            const sortedKeywords = [...categorie.keywords].sort((a, b) => b.length - a.length);
+            const isMatch = sortedKeywords.some(keyword => {
+                if (keyword.includes(' ')) {
+                    return lowerTexte.includes(keyword);
+                }
+                const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+                return regex.test(texte);
+            });
+
+            if (isMatch) {
+                result.typeIntervention = categorie.type;
+                break;
+            }
+        }
+
+        if (!result.typeIntervention && texte.trim().length > 0) {
+            result.typeIntervention = "Autres";
+        }
     }
 
     return result;

@@ -24,6 +24,7 @@ import {
     uploadPhoto,
     supprimerPhoto,
 } from './src/utils/interventionStorage';
+import { genererEtEnvoyerPDF } from './src/utils/generatePDF';
 import CustomAlert from './src/components/CustomAlert';
 
 type FicheInterventionProps = {
@@ -195,6 +196,22 @@ const FicheIntervention: React.FC<FicheInterventionProps> = ({
         });
     };
 
+    // ─── Partager PDF ──────────────────────────────────────
+    const handlePartagerPDF = async () => {
+        if (!intervention) return;
+        try {
+            await genererEtEnvoyerPDF(intervention);
+        } catch (e) {
+            setAlertConfig({
+                visible: true,
+                title: 'Erreur',
+                message: 'Impossible de générer le PDF.',
+                type: 'danger',
+                onConfirm: closeAlert,
+            });
+        }
+    };
+
     // ─── Sauvegarder commentaire au blur ───────────────────
     const handleSaveComment = async () => {
         if (commentaire.trim()) {
@@ -234,21 +251,34 @@ const FicheIntervention: React.FC<FicheInterventionProps> = ({
                         <MaterialIcons name="chevron-left" size={28} color="#F9FAFB" />
                     </Pressable>
 
-                    <View style={[
-                        styles.statusBadge,
-                        isTerminee ? styles.statusBadgeTerminee : styles.statusBadgeEnCours,
-                    ]}>
-                        <MaterialIcons
-                            name={isTerminee ? 'check-circle' : 'schedule'}
-                            size={14}
-                            color={isTerminee ? '#10B981' : '#FBBF24'}
-                        />
-                        <Text style={[
-                            styles.statusBadgeText,
-                            { color: isTerminee ? '#10B981' : '#FBBF24' },
+                    <View style={styles.headerTopRight}>
+                        <Pressable
+                            onPress={handlePartagerPDF}
+                            style={({ pressed }) => [
+                                styles.pdfButton,
+                                pressed && styles.pdfButtonPressed,
+                            ]}
+                        >
+                            <MaterialIcons name="picture-as-pdf" size={18} color="#F87171" />
+                            <Text style={styles.pdfButtonText}>PDF</Text>
+                        </Pressable>
+
+                        <View style={[
+                            styles.statusBadge,
+                            isTerminee ? styles.statusBadgeTerminee : styles.statusBadgeEnCours,
                         ]}>
-                            {isTerminee ? 'Terminée' : 'En cours'}
-                        </Text>
+                            <MaterialIcons
+                                name={isTerminee ? 'check-circle' : 'schedule'}
+                                size={14}
+                                color={isTerminee ? '#10B981' : '#FBBF24'}
+                            />
+                            <Text style={[
+                                styles.statusBadgeText,
+                                { color: isTerminee ? '#10B981' : '#FBBF24' },
+                            ]}>
+                                {isTerminee ? 'Terminée' : 'En cours'}
+                            </Text>
+                        </View>
                     </View>
                 </View>
 
@@ -472,6 +502,30 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 20,
+    },
+    headerTopRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    pdfButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: 'rgba(248, 113, 113, 0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(248, 113, 113, 0.2)',
+    },
+    pdfButtonPressed: {
+        backgroundColor: 'rgba(248, 113, 113, 0.2)',
+    },
+    pdfButtonText: {
+        color: '#F87171',
+        fontSize: 13,
+        fontWeight: '700',
     },
     backButton: {
         width: 44,

@@ -201,6 +201,38 @@ const FormulaireIntervention: React.FC<FormulaireInterventionProps> = ({
                         multiline
                         textAlignVertical="top"
                     />
+                    {/* Section Personne concernée (téléphonie) */}
+                    {(!!current.nomPersonne || !!current.numeroInterne) && (
+                        <>
+                            <Text style={[styles.sectionTitle, { marginTop: 10, color: '#06B6D4' }]}>
+                                Personne concernée
+                            </Text>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Numéro interne</Text>
+                                <TextInput
+                                    style={styles.textInput}
+                                    value={current.numeroInterne ?? ''}
+                                    onChangeText={v => updateField('numeroInterne', v)}
+                                    placeholder="ex: 45043"
+                                    placeholderTextColor="#8B95A7"
+                                    keyboardType="number-pad"
+                                    maxLength={5}
+                                />
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>Nom</Text>
+                                <TextInput
+                                    style={styles.textInput}
+                                    value={current.nomPersonne ?? ''}
+                                    onChangeText={v => updateField('nomPersonne', v)}
+                                    placeholder="Nom de la personne"
+                                    placeholderTextColor="#8B95A7"
+                                />
+                            </View>
+                        </>
+                    )}
                     <View style={{ height: 20 }} />
                 </ScrollView>
 

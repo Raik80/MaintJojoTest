@@ -83,6 +83,7 @@ const FicheIntervention: React.FC<FicheInterventionProps> = ({
 
     const getTypeConfig = (type: string) => {
         const t = type.toLowerCase();
+        if (t.includes('téléphonie') || t.includes('telephonie')) return { icon: 'phone', color: '#06B6D4' };
         if (t.includes('éclairage') || t.includes('lampe')) return { icon: 'lightbulb-outline', color: '#FBBF24' };
         if (t.includes('prise')) return { icon: 'electrical-services', color: '#F87171' };
         if (t.includes('contrôle') || t.includes('accès')) return { icon: 'lock-outline', color: '#34D399' };
@@ -321,6 +322,19 @@ const FicheIntervention: React.FC<FicheInterventionProps> = ({
                         <InfoRow icon="event" label="Créée le" value={formatDate(intervention.dateCreation)} />
                         {isTerminee && intervention.dateTerminee && (
                             <InfoRow icon="check-circle-outline" label="Terminée le" value={formatDate(intervention.dateTerminee)} />
+                        )}
+                        {(!!intervention.numeroInterne || !!intervention.nomPersonne) && (
+                            <InfoRow
+                                icon="phone"
+                                label="Personne"
+                                value={
+                                    intervention.numeroInterne && intervention.nomPersonne
+                                        ? `${intervention.numeroInterne} — ${intervention.nomPersonne}`
+                                        : intervention.numeroInterne
+                                            ? `Numéro : ${intervention.numeroInterne}`
+                                            : intervention.nomPersonne ?? ''
+                                }
+                            />
                         )}
                     </View>
                 </View>

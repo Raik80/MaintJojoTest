@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { BackHandler } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import HomeScreen from './HomeScreen';
 import NouvelleIntervention from './NouvelleIntervention';
@@ -30,6 +31,35 @@ export default function App() {
     message: '',
     type: 'info',
   });
+
+  useEffect(() => {
+    const backAction = () => {
+      if (screen === 'modifier-intervention') {
+        setScreen('fiche-intervention');
+        return true;
+      }
+      if (screen === 'fiche-intervention') {
+        setScreen('liste-interventions');
+        return true;
+      }
+      if (screen === 'liste-interventions') {
+        setScreen('home');
+        return true;
+      }
+      if (screen === 'formulaire-intervention') {
+        setScreen('nouvelle-intervention');
+        return true;
+      }
+      if (screen === 'nouvelle-intervention') {
+        setScreen('home');
+        return true;
+      }
+      return false; // home → ferme l'app normalement
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [screen]);
 
   const handleAnalyzeComplete = (notes: string, data: InterventionExtractedData[]) => {
     setOriginalNotes(notes);

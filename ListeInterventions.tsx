@@ -106,6 +106,7 @@ const ListeInterventions: React.FC<ListeInterventionsProps> = ({ onBackPress, on
 
     const getTypeConfig = (type: string) => {
         const t = type.toLowerCase();
+        if (t.includes('téléphonie') || t.includes('telephonie')) return { icon: 'phone', color: '#06B6D4' }; // Cyan
         if (t.includes('éclairage') || t.includes('lampe')) return { icon: 'lightbulb-outline', color: '#FBBF24' }; // Amber
         if (t.includes('prise')) return { icon: 'electrical-services', color: '#F87171' }; // Red
         if (t.includes('contrôle') || t.includes('accès')) return { icon: 'lock-outline', color: '#34D399' }; // Emerald

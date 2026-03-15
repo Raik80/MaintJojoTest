@@ -33,8 +33,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "a2cfadc4-bcfa-495f-8f0b-7ab32db77985"
+        "projectId": "b712f71b-cf32-4ab7-b1db-8fcead80ac55"
       }
-    }
+    },
+    "owner": "raiky89"
   }
 }

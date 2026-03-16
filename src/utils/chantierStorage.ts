@@ -94,6 +94,11 @@ export const supprimerChantier = async (id: string): Promise<boolean> => {
   }
 };
 
+/**
+ * Supprime tous les chantiers.
+ * Note: Supabase requiert un filtre sur DELETE. On utilise .neq() avec un UUID
+ * impossible comme contournement — même pattern que supprimerToutesInterventions.
+ */
 export const supprimerTousChantiers = async (): Promise<boolean> => {
   try {
     const { error } = await supabase

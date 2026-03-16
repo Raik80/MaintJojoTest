@@ -6,9 +6,11 @@ export type ChantierAnalyse = {
   taches: Tache[];
 };
 
+const LOCALISATION_INCONNUE = 'Localisation non détectée';
+
 export const analyserChantier = (texte: string): ChantierAnalyse => {
   if (!texte.trim()) {
-    return { localisation: 'Localisation non détectée', taches: [] };
+    return { localisation: LOCALISATION_INCONNUE, taches: [] };
   }
 
   const lignes = texte
@@ -16,7 +18,7 @@ export const analyserChantier = (texte: string): ChantierAnalyse => {
     .map(l => l.trim())
     .filter(l => l.length > 0);
 
-  let localisation = 'Localisation non détectée';
+  let localisation = LOCALISATION_INCONNUE;
   let localisationIndex = -1;
 
   for (let i = 0; i < lignes.length; i++) {

@@ -14,15 +14,17 @@ import ChantierScreen from './ChantierScreen';
 import NouveauChantier from './NouveauChantier';
 import FormulaireChantier from './FormulaireChantier';
 import ListeChantiers from './ListeChantiers';
+import FicheChantier from './FicheChantier';
 import { ChantierAnalyse } from './src/utils/chantierParser';
 
-type Screen = 'home' | 'nouvelle-intervention' | 'formulaire-intervention' | 'liste-interventions' | 'fiche-intervention' | 'modifier-intervention' | 'chantier' | 'nouveau-chantier' | 'formulaire-chantier' | 'liste-chantiers';
+type Screen = 'home' | 'nouvelle-intervention' | 'formulaire-intervention' | 'liste-interventions' | 'fiche-intervention' | 'modifier-intervention' | 'chantier' | 'nouveau-chantier' | 'formulaire-chantier' | 'liste-chantiers' | 'fiche-chantier';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const [interventionsData, setInterventionsData] = useState<InterventionExtractedData[]>([]);
   const [originalNotes, setOriginalNotes] = useState<string>('');
   const [selectedInterventionId, setSelectedInterventionId] = useState<string>('');
+  const [selectedChantierId, setSelectedChantierId] = useState<string>('');
   const [chantierAnalyse, setChantierAnalyse] = useState<ChantierAnalyse | null>(null);
 
   const [alertConfig, setAlertConfig] = useState<{
@@ -62,6 +64,7 @@ export default function App() {
       }
       if (screen === 'formulaire-chantier') { setScreen('nouveau-chantier'); return true; }
       if (screen === 'nouveau-chantier')    { setScreen('chantier');          return true; }
+      if (screen === 'fiche-chantier')      { setScreen('liste-chantiers');   return true; }
       if (screen === 'liste-chantiers')     { setScreen('chantier');          return true; }
       if (screen === 'chantier')            { setScreen('home');              return true; }
       return false; // home → ferme l'app normalement
@@ -128,6 +131,11 @@ export default function App() {
   const handleChantierSaveSuccess = () => {
     setChantierAnalyse(null);
     setScreen('chantier');
+  };
+
+  const handleChantierPress = (id: string) => {
+    setSelectedChantierId(id);
+    setScreen('fiche-chantier');
   };
 
   const renderScreen = () => {
@@ -214,6 +222,16 @@ export default function App() {
       return (
         <ListeChantiers
           onBackPress={() => setScreen('chantier')}
+          onChantierPress={handleChantierPress}
+        />
+      );
+    }
+
+    if (screen === 'fiche-chantier' && selectedChantierId) {
+      return (
+        <FicheChantier
+          chantierId={selectedChantierId}
+          onBackPress={() => setScreen('liste-chantiers')}
         />
       );
     }

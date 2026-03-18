@@ -65,6 +65,9 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
   const handleToggleTache = async (index: number) => {
     if (!chantier) return;
 
+    // Save original state before optimistic update
+    const originalChantier = chantier;
+
     // Optimistic update
     const newTaches: Tache[] = chantier.taches.map((t, i) =>
       i === index ? { ...t, done: !t.done } : t
@@ -74,8 +77,8 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
     // Persist
     const success = await updateTachesChantier(chantier.id, newTaches);
     if (!success) {
-      // Rollback
-      setChantier({ ...chantier });
+      // Rollback to original state
+      setChantier(originalChantier);
       setAlertConfig({
         visible: true,
         title: 'Erreur',
@@ -149,7 +152,7 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
           ) : (
             <FlatList
               data={chantier.taches}
-              keyExtractor={(_, i) => String(i)}
+              keyExtractor={(item, i) => `${i}-${item.description}`}
               renderItem={renderTache}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}

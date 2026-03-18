@@ -19,6 +19,7 @@ import CustomAlert from './src/components/CustomAlert';
 
 type ListeChantiersProps = {
   onBackPress?: () => void;
+  onChantierPress?: (id: string) => void;
 };
 
 const formatDate = (isoString: string): string => {
@@ -31,7 +32,7 @@ const formatDate = (isoString: string): string => {
   return `${jour}/${mois}/${annee} à ${heures}:${minutes}`;
 };
 
-const ListeChantiers: React.FC<ListeChantiersProps> = ({ onBackPress }) => {
+const ListeChantiers: React.FC<ListeChantiersProps> = ({ onBackPress, onChantierPress }) => {
   const [chantiers, setChantiers] = useState<SavedChantier[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -104,6 +105,7 @@ const ListeChantiers: React.FC<ListeChantiersProps> = ({ onBackPress }) => {
 
     return (
       <Pressable
+        onPress={() => onChantierPress?.(item.id)}
         onLongPress={() => handleDelete(item)}
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       >

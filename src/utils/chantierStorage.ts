@@ -117,3 +117,23 @@ export const supprimerTousChantiers = async (): Promise<boolean> => {
     return false;
   }
 };
+
+export const chargerChantierById = async (id: string): Promise<SavedChantier | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('chantiers')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Erreur chargement chantier:', error.message);
+      return null;
+    }
+
+    return data as SavedChantier;
+  } catch (error) {
+    console.error('Erreur chargement chantier:', error);
+    return null;
+  }
+};

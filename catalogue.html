@@ -107,13 +107,13 @@
         return;
       }
       liste.innerHTML = equipements.map(e => `
-        <div class="table-row" id="row-${e.id}">
-          <input id="code-${e.id}" value="${esc(e.code_barres)}" onchange="marquerModifie('${e.id}')" />
-          <input id="nom-${e.id}" value="${esc(e.nom)}" onchange="marquerModifie('${e.id}')" />
-          <input id="ref-${e.id}" value="${esc(e.reference_rexel)}" onchange="marquerModifie('${e.id}')" />
+        <div class="table-row" id="row-${esc(e.id)}">
+          <input id="code-${esc(e.id)}" value="${esc(e.code_barres)}" onchange="marquerModifie('${esc(e.id)}')" />
+          <input id="nom-${esc(e.id)}" value="${esc(e.nom)}" onchange="marquerModifie('${esc(e.id)}')" />
+          <input id="ref-${esc(e.id)}" value="${esc(e.reference_rexel)}" onchange="marquerModifie('${esc(e.id)}')" />
           <div class="actions">
-            <button class="btn-save" id="save-${e.id}" style="display:none" onclick="sauvegarder('${e.id}')">Sauvegarder</button>
-            <button class="btn-danger" onclick="supprimer('${e.id}')">Supprimer</button>
+            <button class="btn-save" id="save-${esc(e.id)}" style="display:none" onclick="sauvegarder('${esc(e.id)}')">Sauvegarder</button>
+            <button class="btn-danger" onclick="supprimer('${esc(e.id)}')">Supprimer</button>
           </div>
         </div>
       `).join('');

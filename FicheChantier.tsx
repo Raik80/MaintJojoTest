@@ -377,7 +377,7 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
 
       {materiaux.map((m, index) => (
         <Pressable
-          key={index}
+          key={m.equipement_id}
           onLongPress={() => handleRemoveMateriau(index)}
           style={styles.materiauRow}
         >

@@ -364,16 +364,22 @@ const FicheIntervention: React.FC<FicheInterventionProps> = ({
 
                     <View style={styles.photosGrid}>
                         {photos.map((uri, index) => (
-                            <Pressable
+                            <View
                                 key={index}
-                                onLongPress={() => handleRemovePhoto(index)}
                                 style={styles.photoWrapper}
                             >
                                 <Image source={{ uri }} style={styles.photoImage} />
-                                <View style={styles.photoOverlay}>
-                                    <MaterialIcons name="delete" size={16} color="#FFF" />
-                                </View>
-                            </Pressable>
+                                <Pressable
+                                    onPress={() => handleRemovePhoto(index)}
+                                    style={({ pressed }) => [
+                                        styles.photoOverlay,
+                                        pressed && { opacity: 0.7 },
+                                    ]}
+                                    hitSlop={8}
+                                >
+                                    <MaterialIcons name="close" size={16} color="#FFF" />
+                                </Pressable>
+                            </View>
                         ))}
 
                         {!isTerminee && !uploading && (
@@ -484,7 +490,7 @@ const InfoRow: React.FC<{ icon: string; label: string; value: string }> = ({ ico
             <MaterialIcons name={icon as any} size={18} color="#6B7280" />
             <Text style={styles.infoRowLabel}>{label}</Text>
         </View>
-        <Text style={styles.infoRowValue} numberOfLines={1}>{value}</Text>
+        <Text style={styles.infoRowValue}>{value}</Text>
     </View>
 );
 
@@ -660,7 +666,7 @@ const styles = StyleSheet.create({
         color: '#F9FAFB',
         fontSize: 14,
         fontWeight: '600',
-        maxWidth: '50%',
+        maxWidth: '65%',
         textAlign: 'right',
     },
 

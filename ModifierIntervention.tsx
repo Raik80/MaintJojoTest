@@ -84,6 +84,7 @@ const ModifierIntervention: React.FC<ModifierInterventionProps> = ({
 
     // L'entrée n'est pertinente que pour Bâtiment A et Bâtiment B
     const showEntree = batiment.includes('Bâtiment A') || batiment.includes('Bâtiment B');
+    const showTelephonie = typeIntervention.toLowerCase().includes('téléphonie') || typeIntervention.toLowerCase().includes('telephonie');
 
     const handleSave = async () => {
         if (!typeIntervention.trim()) {
@@ -289,8 +290,8 @@ const ModifierIntervention: React.FC<ModifierInterventionProps> = ({
                         />
                     </View>
 
-                    {/* Personne concernée (téléphonie) — optionnel */}
-                    <View style={styles.sectionContainer}>
+                    {/* Personne concernée (téléphonie uniquement) */}
+                    {showTelephonie && <View style={styles.sectionContainer}>
                         <View style={styles.sectionHeader}>
                             <MaterialIcons name="phone" size={20} color="#06B6D4" />
                             <Text style={styles.sectionTitle}>Personne concernée</Text>
@@ -319,7 +320,7 @@ const ModifierIntervention: React.FC<ModifierInterventionProps> = ({
                                 placeholderTextColor="#6B7280"
                             />
                         </View>
-                    </View>
+                    </View>}
 
                     <View style={{ height: 120 }} />
                 </ScrollView>

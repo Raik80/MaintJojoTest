@@ -1,8 +1,33 @@
 import * as Print from 'expo-print';
 import * as MailComposer from 'expo-mail-composer';
+import * as FileSystem from 'expo-file-system';
+import { Asset } from 'expo-asset';
 import { SavedIntervention } from './interventionStorage';
 
 const RESPONSABLE_EMAIL = 'jean-francois.marc@univ-lorraine.fr';
+
+const getIconBase64 = async (): Promise<string> => {
+    try {
+        const asset = Asset.fromModule(require('../../assets/icon.png'));
+        await asset.downloadAsync();
+        const base64 = await FileSystem.readAsStringAsync(asset.localUri!, { encoding: FileSystem.EncodingType.Base64 });
+        return `data:image/png;base64,${base64}`;
+    } catch {
+        return '';
+    }
+};
+
+const urlToBase64 = async (url: string): Promise<string> => {
+    try {
+        const localPath = FileSystem.cacheDirectory + 'tmp_photo_' + Date.now() + Math.random() + '.jpg';
+        await FileSystem.downloadAsync(url, localPath);
+        const base64 = await FileSystem.readAsStringAsync(localPath, { encoding: FileSystem.EncodingType.Base64 });
+        await FileSystem.deleteAsync(localPath, { idempotent: true });
+        return `data:image/jpeg;base64,${base64}`;
+    } catch {
+        return url;
+    }
+};
 
 const formatDate = (isoString: string): string => {
     const date = new Date(isoString);
@@ -14,20 +39,27 @@ const formatDate = (isoString: string): string => {
     return `${jour}/${mois}/${annee} à ${heures}:${minutes}`;
 };
 
-const buildHTML = (intervention: SavedIntervention): string => {
+const buildHTML = async (intervention: SavedIntervention): Promise<string> => {
     const isTerminee = intervention.status === 'terminee';
     const statusLabel = isTerminee ? 'Terminée' : 'En cours';
     const statusColor = isTerminee ? '#10B981' : '#F59E0B';
     const statusBg = isTerminee ? '#D1FAE5' : '#FEF3C7';
 
-    const photosHTML = intervention.photos && intervention.photos.length > 0
-        ? `<div class="section">
+    const iconBase64 = await getIconBase64();
+    const brandIconHTML = iconBase64
+        ? `<img src="${iconBase64}" style="width:42px;height:42px;border-radius:10px;object-fit:cover;" />`
+        : `<div class="brand-icon">⚡</div>`;
+
+    let photosHTML = '';
+    if (intervention.photos && intervention.photos.length > 0) {
+        const base64Photos = await Promise.all(intervention.photos.map(urlToBase64));
+        photosHTML = `<div class="section">
             <h3 class="section-title">📷 Photos</h3>
             <div class="photos-grid">
-                ${intervention.photos.map(url => `<img src="${url}" class="photo" />`).join('')}
+                ${base64Photos.map(src => `<img src="${src}" class="photo" />`).join('')}
             </div>
-          </div>`
-        : '';
+          </div>`;
+    }
 
     const commentaireHTML = intervention.commentaire
         ? `<div class="section">
@@ -107,7 +139,7 @@ const buildHTML = (intervention: SavedIntervention): string => {
     .brand-icon {
       width: 42px;
       height: 42px;
-      background: #0F172A;
+      background: #F3F4F6;
       border-radius: 10px;
       display: flex;
       align-items: center;
@@ -264,7 +296,7 @@ const buildHTML = (intervention: SavedIntervention): string => {
 
   <div class="header">
     <div class="brand">
-      <div class="brand-icon">🔧</div>
+      ${brandIconHTML}
       <div>
         <div class="brand-name">MaintJojo</div>
         <div class="brand-sub">Rapport d'intervention</div>
@@ -343,13 +375,13 @@ Veuillez trouver ci-joint le rapport de l'intervention suivante :
 • Type : ${intervention.typeIntervention}
 • Lieu : ${lieu || '—'}
 • Date : ${formatDate(intervention.dateCreation)}
-• Statut : ${statut}${intervention.commentaire ? `\n• Commentaire : ${intervention.commentaire}` : ''}
+• Statut : ${statut}${intervention.noteOriginale ? `\n• Note originale : ${intervention.noteOriginale}` : ''}${intervention.commentaire ? `\n• Commentaire : ${intervention.commentaire}` : ''}
 
 Cordialement.`;
 };
 
 export const genererEtEnvoyerPDF = async (intervention: SavedIntervention): Promise<void> => {
-    const html = buildHTML(intervention);
+    const html = await buildHTML(intervention);
 
     const { uri } = await Print.printToFileAsync({
         html,

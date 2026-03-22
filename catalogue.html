@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catalogue Équipements</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #f1f5f9; min-height: 100vh; padding: 32px 24px; }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 32px; color: #38bdf8; }
+    .form-card { background: #1e293b; border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 1px solid #334155; }
+    .form-card h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 180px; }
+    label { font-size: 13px; color: #94a3b8; font-weight: 600; }
+    input { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; color: #f1f5f9; font-size: 15px; outline: none; }
+    input:focus { border-color: #38bdf8; }
+    .btn { padding: 11px 22px; border-radius: 8px; border: none; cursor: pointer; font-size: 15px; font-weight: 700; }
+    .btn-primary { background: #0ea5e9; color: white; }
+    .btn-primary:hover { background: #0284c7; }
+    .btn-danger { background: transparent; color: #f87171; border: 1px solid #f87171; padding: 6px 14px; font-size: 13px; border-radius: 6px; cursor: pointer; }
+    .btn-danger:hover { background: rgba(248,113,113,0.1); }
+    .btn-save { background: #10b981; color: white; padding: 6px 14px; font-size: 13px; border-radius: 6px; cursor: pointer; border: none; font-weight: 700; }
+    .btn-save:hover { background: #059669; }
+    .table-card { background: #1e293b; border-radius: 12px; border: 1px solid #334155; overflow: hidden; }
+    .table-header { display: grid; grid-template-columns: 1fr 1.5fr 1.2fr auto; gap: 12px; padding: 14px 20px; background: #0f172a; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .table-row { display: grid; grid-template-columns: 1fr 1.5fr 1.2fr auto; gap: 12px; padding: 14px 20px; border-top: 1px solid #1e293b; align-items: center; }
+    .table-row:hover { background: #0f172a; }
+    .table-row input { background: transparent; border: 1px solid transparent; padding: 4px 8px; border-radius: 4px; }
+    .table-row input:focus { border-color: #38bdf8; background: #0f172a; }
+    .cell-text { font-size: 14px; color: #cbd5e1; }
+    .actions { display: flex; gap: 8px; }
+    .count { font-size: 14px; color: #64748b; padding: 14px 20px; }
+    .status { position: fixed; bottom: 24px; right: 24px; background: #10b981; color: white; padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: 14px; display: none; }
+  </style>
+</head>
+<body>
+  <h1>Catalogue Équipements</h1>
+
+  <div class="form-card">
+    <h2>Ajouter un équipement</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Code-barres (EAN)</label>
+        <input id="input-code" type="text" placeholder="ex: 3245060107000" />
+      </div>
+      <div class="form-group">
+        <label>Nom du produit</label>
+        <input id="input-nom" type="text" placeholder="ex: Disjoncteur 16A" />
+      </div>
+      <div class="form-group">
+        <label>Référence Rexel</label>
+        <input id="input-ref" type="text" placeholder="ex: REX123456" />
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn btn-primary" onclick="ajouterEquipement()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <span>Code-barres</span>
+      <span>Nom</span>
+      <span>Réf. Rexel</span>
+      <span></span>
+    </div>
+    <div id="liste"></div>
+    <div class="count" id="count"></div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <script>
+    const SUPABASE_URL = 'https://kuacvscomudobqlhnymy.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_yA1kezau8Ymo_IMlclwf4Q_GZDJKUx0';
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let equipements = [];
+
+    function showStatus(msg, isError = false) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.style.background = isError ? '#ef4444' : '#10b981';
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 2500);
+    }
+
+    async function charger() {
+      const { data, error } = await db.from('equipements').select('*').order('created_at', { ascending: false });
+      if (error) { showStatus('Erreur de chargement', true); return; }
+      equipements = data || [];
+      afficher();
+    }
+
+    function afficher() {
+      const liste = document.getElementById('liste');
+      document.getElementById('count').textContent = equipements.length + ' équipement(s)';
+      if (equipements.length === 0) {
+        liste.innerHTML = '<div style="padding:24px;text-align:center;color:#475569">Aucun équipement. Ajoutez-en un ci-dessus.</div>';
+        return;
+      }
+      liste.innerHTML = equipements.map(e => `
+        <div class="table-row" id="row-${e.id}">
+          <input id="code-${e.id}" value="${e.code_barres}" onchange="marquerModifie('${e.id}')" />
+          <input id="nom-${e.id}" value="${e.nom}" onchange="marquerModifie('${e.id}')" />
+          <input id="ref-${e.id}" value="${e.reference_rexel}" onchange="marquerModifie('${e.id}')" />
+          <div class="actions">
+            <button class="btn-save" id="save-${e.id}" style="display:none" onclick="sauvegarder('${e.id}')">Sauvegarder</button>
+            <button class="btn-danger" onclick="supprimer('${e.id}')">Supprimer</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function marquerModifie(id) {
+      document.getElementById('save-' + id).style.display = 'inline-block';
+    }
+
+    async function sauvegarder(id) {
+      const code = document.getElementById('code-' + id).value.trim();
+      const nom = document.getElementById('nom-' + id).value.trim();
+      const ref = document.getElementById('ref-' + id).value.trim();
+      if (!code || !nom || !ref) { showStatus('Tous les champs sont requis', true); return; }
+      const { error } = await db.from('equipements').update({ code_barres: code, nom, reference_rexel: ref }).eq('id', id);
+      if (error) {
+        showStatus(error.message.includes('unique') ? 'Ce code-barres existe déjà' : 'Erreur de sauvegarde', true);
+        return;
+      }
+      document.getElementById('save-' + id).style.display = 'none';
+      showStatus('Sauvegardé ✓');
+      await charger();
+    }
+
+    async function ajouterEquipement() {
+      const code = document.getElementById('input-code').value.trim();
+      const nom = document.getElementById('input-nom').value.trim();
+      const ref = document.getElementById('input-ref').value.trim();
+      if (!code || !nom || !ref) { showStatus('Tous les champs sont requis', true); return; }
+      const { error } = await db.from('equipements').insert({ code_barres: code, nom, reference_rexel: ref });
+      if (error) {
+        showStatus(error.message.includes('unique') ? 'Ce code-barres existe déjà' : 'Erreur d\'ajout', true);
+        return;
+      }
+      document.getElementById('input-code').value = '';
+      document.getElementById('input-nom').value = '';
+      document.getElementById('input-ref').value = '';
+      showStatus('Équipement ajouté ✓');
+      await charger();
+    }
+
+    async function supprimer(id) {
+      if (!confirm('Supprimer cet équipement ?')) return;
+      const { error } = await db.from('equipements').delete().eq('id', id);
+      if (error) { showStatus('Erreur de suppression', true); return; }
+      showStatus('Supprimé ✓');
+      await charger();
+    }
+
+    charger();
+  </script>
+</body>
+</html>

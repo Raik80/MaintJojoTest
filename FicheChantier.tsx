@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Pressable,
   SafeAreaView,
   StatusBar,
@@ -10,11 +11,15 @@ import {
   View,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import {
   SavedChantier,
   Tache,
   chargerChantierById,
   updateTachesChantier,
+  uploadPhotoChantier,
+  supprimerPhotoChantier,
+  updatePhotosChantier,
 } from './src/utils/chantierStorage';
 import CustomAlert from './src/components/CustomAlert';
 
@@ -42,7 +47,10 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
     title: string;
     message: string;
     type: 'success' | 'danger' | 'warning' | 'info';
+    confirmText?: string;
+    cancelText?: string;
     onConfirm: () => void;
+    onCancel?: () => void;
   }>({
     visible: false,
     title: '',
@@ -53,10 +61,14 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
 
   const closeAlert = () => setAlertConfig(prev => ({ ...prev, visible: false }));
 
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+
   const loadChantier = useCallback(async () => {
     setLoading(true);
     const data = await chargerChantierById(chantierId);
     setChantier(data);
+    setPhotos(data?.photos ?? []);
     setLoading(false);
   }, [chantierId]);
 
@@ -89,6 +101,79 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
     }
   };
 
+  const handleAddPhoto = () => {
+    if (!chantier) return;
+    setAlertConfig({
+      visible: true,
+      title: 'Ajouter une photo',
+      message: 'Choisir la source de la photo',
+      type: 'info',
+      confirmText: '📷 Caméra',
+      cancelText: '🖼️ Galerie',
+      onConfirm: async () => {
+        closeAlert();
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
+          quality: 0.7,
+        });
+        if (!result.canceled && result.assets[0]) {
+          await handleUploadAndSave(result.assets[0].uri);
+        }
+      },
+      onCancel: async () => {
+        closeAlert();
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          quality: 0.7,
+        });
+        if (!result.canceled && result.assets[0]) {
+          await handleUploadAndSave(result.assets[0].uri);
+        }
+      },
+    });
+  };
+
+  const handleUploadAndSave = async (localUri: string) => {
+    if (!chantier) return;
+    setUploading(true);
+    const publicUrl = await uploadPhotoChantier(chantier.id, localUri);
+    setUploading(false);
+    if (publicUrl) {
+      const newPhotos = [...photos, publicUrl];
+      setPhotos(newPhotos);
+      await updatePhotosChantier(chantier.id, newPhotos);
+    } else {
+      setAlertConfig({
+        visible: true,
+        title: 'Erreur',
+        message: "Impossible d'uploader la photo.",
+        type: 'danger',
+        onConfirm: closeAlert,
+      });
+    }
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    if (!chantier) return;
+    setAlertConfig({
+      visible: true,
+      title: 'Supprimer la photo',
+      message: 'Voulez-vous supprimer cette photo ?',
+      type: 'danger',
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      onConfirm: async () => {
+        closeAlert();
+        const photoUrl = photos[index];
+        const newPhotos = photos.filter((_, i) => i !== index);
+        setPhotos(newPhotos);
+        await supprimerPhotoChantier(photoUrl);
+        await updatePhotosChantier(chantier.id, newPhotos);
+      },
+      onCancel: closeAlert,
+    });
+  };
+
   const done = chantier?.taches.filter(t => t.done).length ?? 0;
   const total = chantier?.taches.length ?? 0;
 
@@ -106,6 +191,49 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
         {item.description}
       </Text>
     </Pressable>
+  );
+
+  const renderPhotosSection = () => (
+    <View style={styles.photosSection}>
+      <View style={styles.photosSectionHeader}>
+        <MaterialIcons name="photo-library" size={20} color="#A78BFA" />
+        <Text style={styles.photosSectionTitle}>Photos</Text>
+        <Text style={styles.photosCount}>{photos.length}</Text>
+      </View>
+
+      {photos.length > 0 && (
+        <View style={styles.photosGrid}>
+          {photos.map((uri, index) => (
+            <Pressable
+              key={index}
+              onLongPress={() => handleRemovePhoto(index)}
+              style={styles.photoWrapper}
+            >
+              <Image source={{ uri }} style={styles.photoThumbnail} />
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      <Pressable
+        onPress={handleAddPhoto}
+        disabled={uploading}
+        style={({ pressed }) => [
+          styles.addPhotoButton,
+          pressed && !uploading && styles.addPhotoButtonPressed,
+          uploading && styles.addPhotoButtonDisabled,
+        ]}
+      >
+        {uploading ? (
+          <ActivityIndicator size="small" color="#A78BFA" />
+        ) : (
+          <MaterialIcons name="add-a-photo" size={20} color="#A78BFA" />
+        )}
+        <Text style={styles.addPhotoButtonText}>
+          {uploading ? 'Upload en cours...' : 'Ajouter une photo'}
+        </Text>
+      </Pressable>
+    </View>
   );
 
   return (
@@ -144,20 +272,20 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
             <Text style={styles.dateText}>{formatDate(chantier.date_creation)}</Text>
           </View>
 
-          {total === 0 ? (
-            <View style={styles.centered}>
-              <MaterialIcons name="playlist-add-check" size={48} color="#374151" />
-              <Text style={styles.emptyText}>Aucune tâche pour ce chantier</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={chantier.taches}
-              keyExtractor={(item, i) => `${i}-${item.description}`}
-              renderItem={renderTache}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-            />
-          )}
+          <FlatList
+            data={chantier.taches}
+            keyExtractor={(item, i) => `${i}-${item.description}`}
+            renderItem={renderTache}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.centered}>
+                <MaterialIcons name="playlist-add-check" size={48} color="#374151" />
+                <Text style={styles.emptyText}>Aucune tâche pour ce chantier</Text>
+              </View>
+            }
+            ListFooterComponent={renderPhotosSection}
+          />
         </>
       )}
 
@@ -166,7 +294,10 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
         title={alertConfig.title}
         message={alertConfig.message}
         type={alertConfig.type}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
         onConfirm={alertConfig.onConfirm}
+        onCancel={alertConfig.onCancel}
       />
     </SafeAreaView>
   );
@@ -239,6 +370,69 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   emptyText: { color: '#6B7280', fontSize: 16 },
+  photosSection: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 32,
+  },
+  photosSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  photosSectionTitle: {
+    color: '#F9FAFB',
+    fontSize: 16,
+    fontWeight: '700',
+    flex: 1,
+  },
+  photosCount: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '600',
+    backgroundColor: '#1F2937',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  photosGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  photoWrapper: {
+    width: '48%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#1F2937',
+  },
+  photoThumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  addPhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(167, 139, 250, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(167, 139, 250, 0.3)',
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  addPhotoButtonPressed: { backgroundColor: 'rgba(167, 139, 250, 0.2)' },
+  addPhotoButtonDisabled: { opacity: 0.6 },
+  addPhotoButtonText: {
+    color: '#A78BFA',
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });
 
 export default FicheChantier;

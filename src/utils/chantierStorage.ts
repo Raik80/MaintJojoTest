@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { File as ExpoFile } from 'expo-file-system';
 
 export type Tache = {
   description: string;
@@ -9,6 +10,7 @@ export type SavedChantier = {
   id: string;
   localisation: string;
   taches: Tache[];
+  photos: string[];
   date_creation: string;
   status: 'en_cours' | 'termine';
 };
@@ -135,5 +137,88 @@ export const chargerChantierById = async (id: string): Promise<SavedChantier | n
   } catch (error) {
     console.error('Erreur chargement chantier:', error);
     return null;
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// 📸 GESTION DES PHOTOS (Supabase Storage)
+// ─────────────────────────────────────────────────────────────
+
+export const uploadPhotoChantier = async (
+  chantierId: string,
+  localUri: string
+): Promise<string | null> => {
+  try {
+    const ext = localUri.split('.').pop() || 'jpg';
+    const fileName = `chantiers/${chantierId}/${Date.now()}.${ext}`;
+
+    const file = new ExpoFile(localUri);
+    const arrayBuffer = await file.arrayBuffer();
+
+    const { error: uploadError } = await supabase.storage
+      .from('photos')
+      .upload(fileName, arrayBuffer, {
+        contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Erreur upload photo chantier:', uploadError.message);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('photos')
+      .getPublicUrl(fileName);
+
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error('Erreur upload photo chantier:', error);
+    return null;
+  }
+};
+
+export const supprimerPhotoChantier = async (photoUrl: string): Promise<boolean> => {
+  try {
+    const urlParts = photoUrl.split('/storage/v1/object/public/photos/');
+    if (urlParts.length < 2) return false;
+
+    const filePath = urlParts[1];
+
+    const { error } = await supabase.storage
+      .from('photos')
+      .remove([filePath]);
+
+    if (error) {
+      console.error('Erreur suppression photo chantier:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erreur suppression photo chantier:', error);
+    return false;
+  }
+};
+
+export const updatePhotosChantier = async (
+  id: string,
+  photos: string[]
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('chantiers')
+      .update({ photos })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Erreur mise à jour photos chantier:', error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erreur mise à jour photos chantier:', error);
+    return false;
   }
 };

@@ -95,6 +95,10 @@
       afficher();
     }
 
+    function esc(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     function afficher() {
       const liste = document.getElementById('liste');
       document.getElementById('count').textContent = equipements.length + ' équipement(s)';
@@ -104,9 +108,9 @@
       }
       liste.innerHTML = equipements.map(e => `
         <div class="table-row" id="row-${e.id}">
-          <input id="code-${e.id}" value="${e.code_barres}" onchange="marquerModifie('${e.id}')" />
-          <input id="nom-${e.id}" value="${e.nom}" onchange="marquerModifie('${e.id}')" />
-          <input id="ref-${e.id}" value="${e.reference_rexel}" onchange="marquerModifie('${e.id}')" />
+          <input id="code-${e.id}" value="${esc(e.code_barres)}" onchange="marquerModifie('${e.id}')" />
+          <input id="nom-${e.id}" value="${esc(e.nom)}" onchange="marquerModifie('${e.id}')" />
+          <input id="ref-${e.id}" value="${esc(e.reference_rexel)}" onchange="marquerModifie('${e.id}')" />
           <div class="actions">
             <button class="btn-save" id="save-${e.id}" style="display:none" onclick="sauvegarder('${e.id}')">Sauvegarder</button>
             <button class="btn-danger" onclick="supprimer('${e.id}')">Supprimer</button>

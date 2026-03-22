@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -78,6 +78,7 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
 
   const [, requestCameraPermission] = useCameraPermissions();
   const [scannerVisible, setScannerVisible] = useState(false);
+  const scanningRef = useRef(false);
   const [materiaux, setMateriaux] = useState<Materiau[]>([]);
 
   const [quantiteModal, setQuantiteModal] = useState<{
@@ -216,10 +217,13 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
       });
       return;
     }
+    scanningRef.current = false;
     setScannerVisible(true);
   };
 
   const handleBarcodeScanned = async ({ data: codeBarres }: { data: string }) => {
+    if (scanningRef.current) return;
+    scanningRef.current = true;
     setScannerVisible(false);
     if (!chantier) return;
 
@@ -293,9 +297,12 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
       cancelText: 'Annuler',
       onConfirm: async () => {
         closeAlert();
-        const newMateriaux = materiaux.filter((_, i) => i !== index);
-        setMateriaux(newMateriaux);
-        await updateMateriauxChantier(chantier.id, newMateriaux);
+        const chantierId = chantier.id;
+        setMateriaux(prev => {
+          const next = prev.filter((_, i) => i !== index);
+          updateMateriauxChantier(chantierId, next);
+          return next;
+        });
       },
       onCancel: closeAlert,
     });
@@ -471,7 +478,7 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
           <Text style={styles.modalCodeBarres}>Code-barres : {ajoutModal.codeBarres}</Text>
           <Text style={styles.modalLabel}>Nom du produit</Text>
           <TextInput
-            style={styles.modalInput}
+            style={styles.modalInputText}
             value={ajoutModal.nom}
             onChangeText={v => setAjoutModal(p => ({ ...p, nom: v }))}
             placeholder="ex: Disjoncteur 16A"
@@ -480,7 +487,7 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
           />
           <Text style={styles.modalLabel}>Référence Rexel</Text>
           <TextInput
-            style={styles.modalInput}
+            style={styles.modalInputText}
             value={ajoutModal.referenceRexel}
             onChangeText={v => setAjoutModal(p => ({ ...p, referenceRexel: v }))}
             placeholder="ex: REX123456"
@@ -838,6 +845,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 24,
+  },
+  modalInputText: {
+    backgroundColor: '#050B14',
+    borderWidth: 1,
+    borderColor: '#374151',
+    borderRadius: 12,
+    padding: 14,
+    color: '#F9FAFB',
+    fontSize: 15,
+    marginBottom: 16,
   },
   modalButtons: { flexDirection: 'row', gap: 12 },
   modalBtnCancel: {

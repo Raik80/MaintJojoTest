@@ -6,11 +6,20 @@ export type Tache = {
   done: boolean;
 };
 
+export type Materiau = {
+  equipement_id: string;
+  code_barres: string;
+  nom: string;
+  reference_rexel: string;
+  quantite: number;
+};
+
 export type SavedChantier = {
   id: string;
   localisation: string;
   taches: Tache[];
   photos: string[];
+  materiaux: Materiau[];
   date_creation: string;
   status: 'en_cours' | 'termine';
 };
@@ -219,6 +228,27 @@ export const updatePhotosChantier = async (
     return true;
   } catch (error) {
     console.error('Erreur mise à jour photos chantier:', error);
+    return false;
+  }
+};
+
+export const updateMateriauxChantier = async (
+  id: string,
+  materiaux: Materiau[]
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('chantiers')
+      .update({ materiaux })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Erreur mise à jour matériaux:', error.message);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Erreur mise à jour matériaux:', error);
     return false;
   }
 };

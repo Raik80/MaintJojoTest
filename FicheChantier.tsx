@@ -297,12 +297,9 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
       cancelText: 'Annuler',
       onConfirm: async () => {
         closeAlert();
-        const chantierId = chantier.id;
-        setMateriaux(prev => {
-          const next = prev.filter((_, i) => i !== index);
-          updateMateriauxChantier(chantierId, next);
-          return next;
-        });
+        const newMateriaux = materiaux.filter((_, i) => i !== index);
+        setMateriaux(newMateriaux);
+        await updateMateriauxChantier(chantier.id, newMateriaux);
       },
       onCancel: closeAlert,
     });

@@ -86,12 +86,12 @@ export const trouverEquipementParCodeBarres = async (
   codeBarres: string
 ): Promise<Equipement | null>
 
-// Ajouter un équipement au catalogue
+// Ajouter un équipement au catalogue (retourne l'équipement créé pour enchaîner sur le modal quantité)
 export const ajouterEquipement = async (
   codeBarres: string,
   nom: string,
   referenceRexel: string
-): Promise<boolean>
+): Promise<Equipement | null>
 ```
 
 ---

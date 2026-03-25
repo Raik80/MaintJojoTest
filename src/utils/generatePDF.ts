@@ -564,6 +564,28 @@ const buildHTMLChantier = async (chantier: SavedChantier): Promise<string> => {
 </html>`;
 };
 
+const buildSubjectChantier = (chantier: SavedChantier): string => {
+    const date = new Date(chantier.date_creation).toLocaleDateString('fr-FR');
+    return `[MaintJojo] Chantier – ${chantier.localisation} – ${date}`;
+};
+
+const buildBodyChantier = (chantier: SavedChantier): string => {
+    const done = chantier.taches.filter(t => t.done).length;
+    const total = chantier.taches.length;
+    const statut = chantier.status === 'termine' ? 'terminé' : 'en cours';
+
+    return `Bonjour,
+
+Veuillez trouver ci-joint le rapport du chantier suivant :
+
+• Localisation : ${chantier.localisation}
+• Date : ${formatDate(chantier.date_creation)}
+• Statut : ${statut}
+• Tâches : ${done}/${total} complétées
+
+Cordialement.`;
+};
+
 const buildSubject = (intervention: SavedIntervention): string => {
     const date = new Date(intervention.dateCreation);
     const dateStr = date.toLocaleDateString('fr-FR');
@@ -609,6 +631,27 @@ export const genererEtEnvoyerPDF = async (intervention: SavedIntervention): Prom
         recipients: [RESPONSABLE_EMAIL],
         subject: buildSubject(intervention),
         body: buildBody(intervention),
+        attachments: [uri],
+    });
+};
+
+export const genererEtEnvoyerPDFChantier = async (chantier: SavedChantier): Promise<void> => {
+    const isAvailable = await MailComposer.isAvailableAsync();
+    if (!isAvailable) {
+        throw new Error('Aucune application mail disponible sur cet appareil.');
+    }
+
+    const html = await buildHTMLChantier(chantier);
+
+    const { uri } = await Print.printToFileAsync({
+        html,
+        base64: false,
+    });
+
+    await MailComposer.composeAsync({
+        recipients: [RESPONSABLE_EMAIL],
+        subject: buildSubjectChantier(chantier),
+        body: buildBodyChantier(chantier),
         attachments: [uri],
     });
 };

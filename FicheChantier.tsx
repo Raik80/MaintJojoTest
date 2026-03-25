@@ -33,6 +33,7 @@ import {
   ajouterEquipement,
   Equipement,
 } from './src/utils/equipementStorage';
+import { genererEtEnvoyerPDFChantier } from './src/utils/generatePDF';
 import CustomAlert from './src/components/CustomAlert';
 
 type FicheChantierProps = {
@@ -75,6 +76,7 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
 
   const [photos, setPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const [, requestCameraPermission] = useCameraPermissions();
   const [scannerVisible, setScannerVisible] = useState(false);
@@ -303,6 +305,25 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
       },
       onCancel: closeAlert,
     });
+  };
+
+  const handleGenererPDF = async () => {
+    if (!chantier) return;
+    setGenerating(true);
+    try {
+      await genererEtEnvoyerPDFChantier(chantier);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Une erreur est survenue.';
+      setAlertConfig({
+        visible: true,
+        title: 'Erreur',
+        message,
+        type: 'danger',
+        onConfirm: closeAlert,
+      });
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const done = chantier?.taches.filter(t => t.done).length ?? 0;
@@ -562,6 +583,24 @@ const FicheChantier: React.FC<FicheChantierProps> = ({ chantierId, onBackPress }
               <>
                 {renderPhotosSection()}
                 {renderMateriauxSection()}
+                <Pressable
+                  onPress={handleGenererPDF}
+                  disabled={generating || !chantier}
+                  style={({ pressed }) => [
+                    styles.pdfButton,
+                    pressed && !generating && styles.pdfButtonPressed,
+                    (generating || !chantier) && styles.pdfButtonDisabled,
+                  ]}
+                >
+                  {generating ? (
+                    <ActivityIndicator size="small" color="#EF4444" />
+                  ) : (
+                    <MaterialIcons name="picture-as-pdf" size={20} color="#EF4444" />
+                  )}
+                  <Text style={styles.pdfButtonText}>
+                    {generating ? 'Génération en cours...' : 'Générer et envoyer le PDF'}
+                  </Text>
+                </Pressable>
               </>
             )}
           />
@@ -870,6 +909,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalBtnConfirmText: { color: '#000', fontWeight: '800', fontSize: 15 },
+  pdfButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 40,
+  },
+  pdfButtonPressed: { backgroundColor: 'rgba(239, 68, 68, 0.2)' },
+  pdfButtonDisabled: { opacity: 0.6 },
+  pdfButtonText: {
+    color: '#EF4444',
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });
 
 export default FicheChantier;

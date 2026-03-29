@@ -25,6 +25,7 @@ import {
     supprimerPhoto,
 } from './src/utils/interventionStorage';
 import { genererEtEnvoyerPDF } from './src/utils/generatePDF';
+import { getPhoneInfo, setPhoneType, convertirEnSIP, PhoneType, PhoneInfo } from './src/utils/phoneTypeStorage';
 import CustomAlert from './src/components/CustomAlert';
 
 type FicheInterventionProps = {
@@ -44,6 +45,11 @@ const FicheIntervention: React.FC<FicheInterventionProps> = ({
     const [photos, setPhotos] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
+    const [phoneInfo, setPhoneInfo] = useState<PhoneInfo | null>(null);
+    const [conversionVisible, setConversionVisible] = useState(false);
+    const [convSwitch, setConvSwitch] = useState('');
+    const [convPort, setConvPort] = useState('');
+    const [convPrise, setConvPrise] = useState('');
     const scrollViewRef = useRef<ScrollView>(null);
 
     const [alertConfig, setAlertConfig] = useState<{
@@ -73,6 +79,10 @@ const FicheIntervention: React.FC<FicheInterventionProps> = ({
             setIntervention(found);
             setCommentaire(found.commentaire || '');
             setPhotos(found.photos || []);
+            if (found.numeroInterne) {
+                const info = await getPhoneInfo(found.numeroInterne);
+                setPhoneInfo(info);
+            }
         }
         setLoading(false);
     }, [interventionId]);
@@ -213,6 +223,28 @@ const FicheIntervention: React.FC<FicheInterventionProps> = ({
         }
     };
 
+    // ─── Type téléphone (SIP / Numérique) ─────────────────
+    const handleSetPhoneType = async (type: PhoneType) => {
+        if (!intervention?.numeroInterne) return;
+        await setPhoneType(intervention.numeroInterne, type);
+        setPhoneInfo({ type });
+    };
+
+    const handleConvertirSIP = async () => {
+        if (!intervention?.numeroInterne) return;
+        if (!convSwitch.trim() || !convPort.trim() || !convPrise.trim()) return;
+        await convertirEnSIP(intervention.numeroInterne, {
+            switch: convSwitch.trim(),
+            port: convPort.trim(),
+            prise: convPrise.trim(),
+        });
+        setPhoneInfo({ type: 'SIP', switch: convSwitch.trim(), port: convPort.trim(), prise: convPrise.trim() });
+        setConversionVisible(false);
+        setConvSwitch('');
+        setConvPort('');
+        setConvPrise('');
+    };
+
     // ─── Sauvegarder commentaire au blur ───────────────────
     const handleSaveComment = async () => {
         if (commentaire.trim()) {
@@ -328,16 +360,105 @@ const FicheIntervention: React.FC<FicheInterventionProps> = ({
                                 icon="phone"
                                 label="Personne"
                                 value={
-                                    intervention.numeroInterne && intervention.nomPersonne
-                                        ? `${intervention.numeroInterne} — ${intervention.nomPersonne}`
-                                        : intervention.numeroInterne
-                                            ? `Numéro : ${intervention.numeroInterne}`
-                                            : intervention.nomPersonne ?? ''
+                                    (() => {
+                                        const num = intervention.numeroInterne;
+                                        const nom = intervention.nomPersonne;
+                                        const type = phoneInfo ? `${phoneInfo.type} • ` : '';
+                                        if (num && nom) return `${type}${num} — ${nom}`;
+                                        if (num) return `${type}${num}`;
+                                        return nom ?? '';
+                                    })()
                                 }
                             />
                         )}
+                        {!!phoneInfo?.switch && (
+                            <InfoRow icon="router" label="Switch" value={`${phoneInfo.switch} | Port ${phoneInfo.port} | Prise ${phoneInfo.prise}`} />
+                        )}
                     </View>
                 </View>
+
+                {/* ─── Type téléphone ──────────────────────────── */}
+                {!!intervention.numeroInterne && !isTerminee && phoneInfo === null && (
+                    <View style={styles.phoneTypeCard}>
+                        <View style={styles.phoneTypeLabelRow}>
+                            <MaterialIcons name="phone" size={16} color="#06B6D4" />
+                            <Text style={styles.phoneTypeLabel}>Type de ligne</Text>
+                        </View>
+                        <View style={styles.phoneTypeRow}>
+                            <Pressable
+                                onPress={() => handleSetPhoneType('SIP')}
+                                style={[styles.phoneTypeButton, phoneInfo?.type === 'SIP' && styles.phoneTypeButtonActive]}
+                            >
+                                <Text style={[styles.phoneTypeButtonText, phoneInfo?.type === 'SIP' && styles.phoneTypeButtonTextActive]}>SIP</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => handleSetPhoneType('Numérique')}
+                                style={[styles.phoneTypeButton, phoneInfo?.type === 'Numérique' && styles.phoneTypeButtonActive]}
+                            >
+                                <Text style={[styles.phoneTypeButtonText, phoneInfo?.type === 'Numérique' && styles.phoneTypeButtonTextActive]}>Numérique</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                )}
+
+                {/* ─── Conversion SIP ──────────────────────────── */}
+                {!!intervention.numeroInterne && !isTerminee && phoneInfo?.type === 'Numérique' && (
+                    <View>
+                        {!conversionVisible ? (
+                            <Pressable
+                                onPress={() => setConversionVisible(true)}
+                                style={({ pressed }) => [styles.convertButton, pressed && styles.convertButtonPressed]}
+                            >
+                                <MaterialIcons name="swap-horiz" size={18} color="#06B6D4" />
+                                <Text style={styles.convertButtonText}>Convertir en SIP</Text>
+                            </Pressable>
+                        ) : (
+                            <View style={styles.conversionCard}>
+                                <View style={styles.phoneTypeLabelRow}>
+                                    <MaterialIcons name="swap-horiz" size={16} color="#06B6D4" />
+                                    <Text style={styles.phoneTypeLabel}>Conversion SIP</Text>
+                                </View>
+                                <TextInput
+                                    style={styles.convInput}
+                                    placeholder="Switch"
+                                    placeholderTextColor="#6B7280"
+                                    value={convSwitch}
+                                    onChangeText={setConvSwitch}
+                                />
+                                <TextInput
+                                    style={styles.convInput}
+                                    placeholder="Numéro de port"
+                                    placeholderTextColor="#6B7280"
+                                    value={convPort}
+                                    onChangeText={setConvPort}
+                                    keyboardType="numeric"
+                                />
+                                <TextInput
+                                    style={styles.convInput}
+                                    placeholder="Numéro de prise"
+                                    placeholderTextColor="#6B7280"
+                                    value={convPrise}
+                                    onChangeText={setConvPrise}
+                                    keyboardType="numeric"
+                                />
+                                <View style={styles.convButtons}>
+                                    <Pressable
+                                        onPress={() => { setConversionVisible(false); setConvSwitch(''); setConvPort(''); setConvPrise(''); }}
+                                        style={({ pressed }) => [styles.convCancelButton, pressed && { opacity: 0.7 }]}
+                                    >
+                                        <Text style={styles.convCancelText}>Annuler</Text>
+                                    </Pressable>
+                                    <Pressable
+                                        onPress={handleConvertirSIP}
+                                        style={({ pressed }) => [styles.convConfirmButton, pressed && { opacity: 0.7 }]}
+                                    >
+                                        <Text style={styles.convConfirmText}>Confirmer</Text>
+                                    </Pressable>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                )}
 
                 {/* ─── Note Originale ──────────────────────────── */}
                 {intervention.noteOriginale ? (
@@ -749,6 +870,122 @@ const styles = StyleSheet.create({
         color: '#38BDF8',
         fontSize: 11,
         fontWeight: '600',
+    },
+
+    // Phone Type
+    phoneTypeCard: {
+        backgroundColor: '#111827',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#1F2937',
+        padding: 16,
+        marginBottom: 20,
+        gap: 12,
+    },
+    phoneTypeLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    phoneTypeLabel: {
+        color: '#9CA3AF',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    phoneTypeRow: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    phoneTypeButton: {
+        paddingHorizontal: 20,
+        paddingVertical: 8,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#1F2937',
+        backgroundColor: '#0D1420',
+    },
+    phoneTypeButtonActive: {
+        borderColor: '#06B6D4',
+        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    },
+    phoneTypeButtonText: {
+        color: '#6B7280',
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    phoneTypeButtonTextActive: {
+        color: '#06B6D4',
+    },
+
+    // Conversion SIP
+    convertButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(6, 182, 212, 0.3)',
+        backgroundColor: 'rgba(6, 182, 212, 0.07)',
+        marginBottom: 20,
+    },
+    convertButtonPressed: {
+        backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    },
+    convertButtonText: {
+        color: '#06B6D4',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    conversionCard: {
+        backgroundColor: '#111827',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#1F2937',
+        padding: 16,
+        marginBottom: 20,
+        gap: 10,
+    },
+    convInput: {
+        borderWidth: 1,
+        borderColor: '#1F2937',
+        borderRadius: 12,
+        backgroundColor: '#0D1420',
+        color: '#F9FAFB',
+        fontSize: 14,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+    },
+    convButtons: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: 4,
+    },
+    convCancelButton: {
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#1F2937',
+        alignItems: 'center',
+    },
+    convCancelText: {
+        color: '#6B7280',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    convConfirmButton: {
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: 12,
+        backgroundColor: '#06B6D4',
+        alignItems: 'center',
+    },
+    convConfirmText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '700',
     },
 
     // Note Originale

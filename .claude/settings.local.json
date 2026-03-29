@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(grep -n \"^const formatDate\\\\|^const buildHTML\\\\|^const buildSubject\\\\|^const buildBody\" /c/Users/MRthe/Desktop/travail/MaintJojoTest/*.tsx /c/Users/MRthe/Desktop/travail/MaintJojoTest/src/utils/*.ts)"
+    ]
+  }
+}
